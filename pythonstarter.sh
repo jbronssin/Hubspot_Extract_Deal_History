@@ -47,13 +47,11 @@ echo "Creating virtual environment..."
 python3 -m venv venv
 
 echo "Installing required packages in the virtual environment..."
-pip3 install requests
-pip3 install python-dotenv
-pip3 install termcolor
+pip3 install -r requirements.txt
 
 echo "Virtual environment setup complete!"
 
-echo "Please make sure you have created a Private Connected App with the required scopes as listed in the Hubspot-ConnectedApp-Scope.md file."
+echo "$(tput setaf 1)Please make sure you have created a Private Connected App with the required scopes as listed in the Hubspot-ConnectedApp-Scope.md file.$(tput sgr0)"
 
 if [ ! -f ".env" ] || [ -z "$(grep -E '^HUBSPOT_TOKEN=.+' .env)" ]
 then
@@ -67,6 +65,6 @@ fi
 
 echo "You are set to go!" 
 
-echo "$(tput setaf 4)To activate the virtual environment, run 'source ./venv/bin/activate'$(tput sgr0)"
+echo "$(tput setaf 4)YOU MUST activate the virtual environment, run 'source ./venv/bin/activate'$(tput sgr0)"
 echo "$(tput setaf 4)To deactivate the virtual environment, run 'deactivate'$(tput sgr0)"
 echo "$(tput setaf 4)To run the script, run 'python3 hubspot_history.py' or 'python3 hubspot_history_all_pipes.py'$(tput sgr0)"
