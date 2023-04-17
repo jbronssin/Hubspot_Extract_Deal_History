@@ -98,7 +98,7 @@ def main():
         
         return stage_dict
 
-    stage_dict = get_pipeline_stages(PIPELINE_ID) if PIPELINE_ID else None
+    stage_dict = get_pipeline_stages(PIPELINE_ID) if PIPELINE_ID is not None else {}
 
     # Ask the user if he wants to extract all the deal stage history or only the oldest date
     print(colored("Do you want to extract all your deal stage history (enter 'all') or exclusively the first oldest date for each stage? (presse ENTER)", "blue"))
