@@ -97,8 +97,18 @@ def main():
             stage_dict[stage["id"]] = stage["label"]
         
         return stage_dict
+    
+    # Get all the stages for all the pipelines
+    def get_all_pipeline_stages():
+        pipelines = get_pipelines()
+        all_stage_dict = {}
+        for pipeline in pipelines:
+            pipeline_stages = get_pipeline_stages(pipeline["id"])
+            all_stage_dict.update(pipeline_stages)
+        return all_stage_dict
 
-    stage_dict = get_pipeline_stages(PIPELINE_ID) if PIPELINE_ID is not None else {}
+    # Get all the stages for all the pipelines and store it in stage_dict
+    stage_dict = get_all_pipeline_stages()
 
     # Ask the user if he wants to extract all the deal stage history or only the oldest date
     print(colored("Do you want to extract all your deal stage history (enter 'all') or exclusively the first oldest date for each stage? (presse ENTER)", "blue"))
@@ -156,7 +166,7 @@ def main():
                         if 'value' in history:
                             timestamp = history["timestamp"]
                             value = history["value"]
-                            stage_name = stage_dict.get(value, value)
+                            stage_name = stage_dict.get(int(value))
 
                             formatted_date = datetime.fromtimestamp(timestamp // 1000).strftime("%Y-%m-%d %H:%M")
                             writer.writerow([deal_id, deal_name, stage_name, formatted_date])
