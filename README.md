@@ -16,6 +16,7 @@ This is a simple script that will extract the history of a Hubspot Deal. It will
 4. You have to scripts to run, depending on what you are looking for:
     - `python3 extract_deal_history.py` will extract the deal stage history of all the deals in your Hubspot account (in any pipeline) (you have a few options if you either want to extract the oldest date par deal stage or all the changes)
     - `hubspot_history_all_pipes.py` will extract the count of deal stage history by deal
+    - `hubspot_history_date_pipeline.py` will extract the pipeline change history by deal (you have a few options if you either want to extract the oldest date par pipeline change or all the changes)
 
 ![Hubspot Extract Deal History](./img/screen.jpg)
 
