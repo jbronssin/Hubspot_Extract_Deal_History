@@ -99,18 +99,18 @@ def main():
         return stage_dict
     
     # Get all the stages for all the pipelines
-    def get_all_pipeline_stages():  
-        pipelines = get_pipelines()  
-        all_stage_dict = {}  
-        for pipeline in pipelines:  
-            pipeline_stages = get_pipeline_stages(pipeline["id"])  
-            # Here we also store the pipeline label along with the stage label
-            for stage_id, stage_label in pipeline_stages.items():
-                all_stage_dict[stage_id] = (pipeline["label"], stage_label)
-        return all_stage_dict
+    def get_all_pipeline_stages():
+        pipelines = get_pipelines()
+        all_stage_dict = {}
+        all_pipeline_dict = {}
+        for pipeline in pipelines:
+            pipeline_stages = get_pipeline_stages(pipeline["id"])
+            all_stage_dict.update(pipeline_stages)
+            all_pipeline_dict[pipeline["id"]] = pipeline["label"]
+        return all_stage_dict, all_pipeline_dict
 
     # Get all the stages for all the pipelines and store it in stage_dict
-    stage_dict = get_all_pipeline_stages()
+    stage_dict, pipeline_dict = get_all_pipeline_stages()
 
     # Ask the user if he wants to extract all the deal stage history or only the oldest date
     print(colored("Do you want to extract all your deal stage history (enter 'all') or exclusively the first oldest date for each stage? (presse ENTER)", "blue"))
@@ -131,7 +131,7 @@ def main():
                     ]
                 }
             ] if PIPELINE_ID else [],
-            "properties": ["dealstage", "dealname"],
+            "properties": ["dealstage", "dealname", "pipeline"],
             "sort": [{"propertyName": "createdate", "direction": "ASCENDING"}],
             "limit": 20,
         }
@@ -152,45 +152,44 @@ def main():
         response.raise_for_status()
         return response.json()["properties"][property_name]["versions"]
 
-    def save_deals_to_csv(deals, file_name, all_dates):  
-        with open(file_name, mode="w", newline="", encoding="utf-8") as file:  
-            writer = csv.writer(file)  
-            # Here we add 'Pipeline Name' to the CSV header
-            writer.writerow(["Deal ID", "Deal Name", "Pipeline Name", "Deal Stage", "Timestamp"])  
+    def save_deals_to_csv(deals, file_name, all_dates):
+        with open(file_name, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Deal ID", "Deal Name", "Deal Stage", "Pipeline", "Timestamp"])
 
-            for deal in deals:  
-                deal_id = deal["id"]  
-                deal_name = deal["properties"]["dealname"]  
-                property_name = "dealstage"  
-                histories = get_property_history(deal_id, property_name)  
+            for deal in deals:
+                deal_id = deal["id"]
+                deal_name = deal["properties"]["dealname"]
+                pipeline_id = deal["properties"]["pipeline"]
+                pipeline_name = pipeline_dict.get(pipeline_id, pipeline_id)
+                property_name = "dealstage"
+                histories = get_property_history(deal_id, property_name)
 
-            if all_dates:  
-                for history in histories:  
-                    if 'value' in history:  
-                        timestamp = history["timestamp"]  
-                        value = history["value"]  
-                        # Here we retrieve the pipeline and stage name
-                        pipeline_name, stage_name = stage_dict.get(value, (value, value))
+                if all_dates:
+                    for history in histories:
+                        if 'value' in history:
+                            timestamp = history["timestamp"]
+                            value = history["value"]
+                            stage_name = stage_dict.get(int(value))
 
-                        formatted_date = datetime.fromtimestamp(timestamp // 1000).strftime("%Y-%m-%d %H:%M")  
-                        # Here we add the pipeline name to each row
-                        writer.writerow([deal_id, deal_name, pipeline_name, stage_name, formatted_date])  
-            else:  
-                stage_changes = defaultdict(lambda: {"timestamp": float("inf"), "source": ""})  
-                for history in histories:  
-                    if 'value' in history:  
-                        timestamp = history["timestamp"]  
-                        value = history["value"]  
-                        # Here we retrieve the pipeline and stage name
-                        pipeline_name, stage_name = stage_dict.get(value, (value, value))  
+                            formatted_date = datetime.fromtimestamp(timestamp // 1000).strftime("%Y-%m-%d %H:%M")
+                            writer.writerow([deal_id, deal_name, stage_name, pipeline_name, formatted_date])
 
-                        if int(timestamp) < stage_changes[stage_name]["timestamp"]:  
-                            stage_changes[stage_name] = {"timestamp": int(timestamp), "source": deal_name}  
+                else:
+                    stage_changes = defaultdict(lambda: {"timestamp": float("inf"), "source": ""})
+                    for history in histories:
+                        if 'value' in history:
+                            timestamp = history["timestamp"]
+                            value = history["value"]
+                            stage_name = stage_dict.get(value, value)
 
-                for stage_name, change_info in stage_changes.items():  
-                    formatted_date = datetime.fromtimestamp(change_info["timestamp"] // 1000).strftime("%Y-%m-%d %H:%M")  
-                    # Here we add the pipeline name to each row
-                    writer.writerow([deal_id, deal_name, pipeline_name, stage_name, formatted_date])
+                            if int(timestamp) < stage_changes[stage_name]["timestamp"]:
+                                stage_changes[stage_name] = {"timestamp": int(timestamp), "source": deal_name}
+
+                    for stage_name, change_info in stage_changes.items():
+                        formatted_date = datetime.fromtimestamp(change_info["timestamp"] // 1000).strftime("%Y-%m-%d %H:%M")
+                        writer.writerow([deal_id, deal_name, stage_name, pipeline_name, formatted_date])
+
 
     offset = None
     file_counter = 1
